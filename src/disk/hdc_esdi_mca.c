@@ -116,6 +116,7 @@ typedef struct esdi_t {
     int      irq_ena_disable;
     int      irq_in_progress;
     int      cmd_req_in_progress;
+    int      cmd_aborted;
     int      cmd_pos;
     uint16_t cmd_data[4];
     int      cmd_dev;
@@ -182,6 +183,7 @@ enum {
 #define ATTN_REQ_MASK              0x0f
 #define ATTN_CMD_REQ               1
 #define ATTN_EOI                   2
+#define ATTN_ABORT                 3
 #define ATTN_RESET                 4
 
 #define CMD_SIZE_4                 (1 << 14)
@@ -402,6 +404,15 @@ esdi_callback(void *priv)
         dev->status_len = 1; /*ToDo: better implementation for Xenix?*/
         dev->status_data[0] = STATUS_LEN(1) | ATTN_HOST_ADAPTER;
         dev->irq_status = IRQ_HOST_ADAPTER | IRQ_RESET_COMPLETE;
+        return;
+    }
+
+    if (dev->cmd_aborted) {
+        dev->cmd_req_in_progress = 0;
+        dev->cmd_aborted = 0;
+        dev->status &= ~STATUS_BUSY;
+        dev->status_data[0] = dev->command | STATUS_LEN(9) | dev->cmd_dev;
+        dev->status_data[1] = 0x0f01; // Command aborted
         return;
     }
 
@@ -1028,6 +1039,17 @@ esdi_write(uint16_t port, uint8_t val, void *priv)
                             clear_irq(dev);
                             break;
 
+                        case ATTN_ABORT:
+                            if (!dev->cmd_req_in_progress || dev->cmd_dev != ATTN_HOST_ADAPTER)
+                                fatal("Abort on host adapter with no active command\n");
+                            dev->cmd_aborted = 1;
+                            dev->interrupt_status |= IRQ_CMD_COMPLETE_FAILURE;
+                            dev->status_interface = (dev->status_data[0] & 0xFF);
+                            esdi_mca_set_callback(dev, ESDI_TIME);
+                            dev->status |= STATUS_IRQ;
+                            dev->irq_in_progress = 1;
+                            break;
+
                         case ATTN_RESET:
                             dev->in_reset = 1;
                             esdi_mca_set_callback(dev, ESDI_TIME * 50);
@@ -1059,6 +1081,17 @@ esdi_write(uint16_t port, uint8_t val, void *priv)
                             clear_irq(dev);
                             break;
 
+                        case ATTN_ABORT:
+                            if (!dev->cmd_req_in_progress || dev->cmd_dev != ATTN_DEVICE_0)
+                                fatal("Abort on device 0 with no active command\n");
+                            dev->cmd_aborted = 1;
+                            dev->interrupt_status |= IRQ_CMD_COMPLETE_FAILURE;
+                            dev->status_interface = (dev->status_data[0] & 0xFF);
+                            esdi_mca_set_callback(dev, ESDI_TIME);
+                            dev->status |= STATUS_IRQ;
+                            dev->irq_in_progress = 1;
+                            break;
+
                         default:
                             fatal("Bad attention request %02x\n", val);
                     }
@@ -1080,6 +1113,17 @@ esdi_write(uint16_t port, uint8_t val, void *priv)
                             dev->irq_in_progress = 0;
                             dev->status &= ~STATUS_IRQ;
                             clear_irq(dev);
+                            break;
+
+                        case ATTN_ABORT:
+                            if (!dev->cmd_req_in_progress || dev->cmd_dev != ATTN_DEVICE_1)
+                                fatal("Abort on device 1 with no active command\n");
+                            dev->cmd_aborted = 1;
+                            dev->interrupt_status |= IRQ_CMD_COMPLETE_FAILURE;
+                            dev->status_interface = (dev->status_data[0] & 0xFF);
+                            esdi_mca_set_callback(dev, ESDI_TIME);
+                            dev->status |= STATUS_IRQ;
+                            dev->irq_in_progress = 1;
                             break;
 
                         default:
