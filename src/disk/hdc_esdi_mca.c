@@ -408,11 +408,19 @@ esdi_callback(void *priv)
     }
 
     if (dev->cmd_aborted) {
+        esdi_mca_log("ESDI abort.\n");
         dev->cmd_req_in_progress = 0;
         dev->cmd_aborted = 0;
         dev->status &= ~STATUS_BUSY;
         dev->status_data[0] = dev->command | STATUS_LEN(9) | dev->cmd_dev;
-        dev->status_data[1] = 0x0f01; // Command aborted
+        dev->status_data[1] = 0x0900; /*Abort Complete, No Error*/
+        dev->status_data[2] = 0;
+        dev->status_data[3] = 0;
+        dev->status_data[4] = 0;
+        dev->status_data[5] = 0;
+        dev->status_data[6] = 0;
+        dev->status_data[7] = 0;
+        dev->status_data[8] = 0;
         return;
     }
 
