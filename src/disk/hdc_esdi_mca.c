@@ -1043,8 +1043,6 @@ esdi_write(uint16_t port, uint8_t val, void *priv)
                             if (!dev->cmd_req_in_progress || dev->cmd_dev != ATTN_HOST_ADAPTER)
                                 fatal("Abort on host adapter with no active command\n");
                             dev->cmd_aborted = 1;
-                            dev->interrupt_status |= IRQ_CMD_COMPLETE_FAILURE;
-                            dev->status_interface = (dev->status_data[0] & 0xFF);
                             esdi_mca_set_callback(dev, ESDI_TIME);
                             dev->status |= STATUS_IRQ;
                             dev->irq_in_progress = 1;
@@ -1085,8 +1083,6 @@ esdi_write(uint16_t port, uint8_t val, void *priv)
                             if (!dev->cmd_req_in_progress || dev->cmd_dev != ATTN_DEVICE_0)
                                 fatal("Abort on device 0 with no active command\n");
                             dev->cmd_aborted = 1;
-                            dev->interrupt_status |= IRQ_CMD_COMPLETE_FAILURE;
-                            dev->status_interface = (dev->status_data[0] & 0xFF);
                             esdi_mca_set_callback(dev, ESDI_TIME);
                             dev->status |= STATUS_IRQ;
                             dev->irq_in_progress = 1;
@@ -1119,8 +1115,6 @@ esdi_write(uint16_t port, uint8_t val, void *priv)
                             if (!dev->cmd_req_in_progress || dev->cmd_dev != ATTN_DEVICE_1)
                                 fatal("Abort on device 1 with no active command\n");
                             dev->cmd_aborted = 1;
-                            dev->interrupt_status |= IRQ_CMD_COMPLETE_FAILURE;
-                            dev->status_interface = (dev->status_data[0] & 0xFF);
                             esdi_mca_set_callback(dev, ESDI_TIME);
                             dev->status |= STATUS_IRQ;
                             dev->irq_in_progress = 1;
