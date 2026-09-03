@@ -936,8 +936,7 @@ s3_virge_recalctimings(svga_t *svga)
     svga->htotal += 5; /*+5 is required for Tyrian*/
 
     svga->hdisp = svga->crtc[1] + ((svga->crtc[0x5d] & 0x02) ? 0x100 : 0);
-    if (svga->crtc[1] & 0x01)
-        svga->hdisp++;
+    svga->hdisp++;
 
     svga->hdisp_time = svga->hdisp;
 
